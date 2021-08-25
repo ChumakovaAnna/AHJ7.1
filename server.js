@@ -1,3 +1,6 @@
+/* eslint-disable no-return-await */
+/* eslint-disable consistent-return */
+/* eslint-disable no-unused-vars */
 const http = require("http");
 const Koa = require("koa");
 const koaBody = require("koa-body");
@@ -46,30 +49,61 @@ app.use(async (ctx, next) => {
 });
 
 app.use(async (ctx) => {
-  const { method } = ctx.request.querystring;
+  const { method } = ctx.request.query;
+  if (ctx.request.method === "GET") {
+    switch (method) {
+      case "allTickets": {
+        const allTickets = ticketsList.data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          status: item.status,
+          created: item.created,
+        }));
+        ctx.response.body = allTickets;
+        break;
+      }
 
-  switch (method) {
-    case "allTickets": {
-      ctx.response.body = ticketsList.data;
-      break;
-    }
+      case "ticketById": {
+        const { id } = ctx.request.query;
+        ctx.response.body = ticketsList.byId(id);
+        break;
+      }
 
-    case "ticketById": {
-      const { id } = ctx.request.query;
-      ctx.response.body = ticketsList.byId(id);
-      break;
-    }
+      case "createTicket": {
+        const { name, description } = ctx.request.query;
+        ticketsList.add(name, description);
+        ctx.response.body = ticketsList;
+        break;
+      }
 
-    case "createTicket": {
-      const { name, description } = ctx.request.query;
-      ticketsList.add(name, description);
-      ctx.response.body = ticketsList;
-      break;
+      default: {
+        ctx.response.status = 404;
+      }
     }
+  }
 
-    default: {
-      ctx.response.status = 404;
-    }
+  if (ctx.request.method === "POST") {
+    const { name, description } = ctx.request.body;
+    ticketsList.add(name, description);
+    ctx.response.body = "New ticket added.";
+  }
+
+  if (ctx.request.method === "PUT") {
+    const { id, name, description } = ctx.request.body;
+    ticketsList.changeTicket(id, name, description);
+    ctx.response.body = "Ticket changed.";
+  }
+
+  if (ctx.method === "DELETE") {
+    const { id } = ctx.request.query;
+    ticketsList.delete(id);
+    ctx.response.body = "ok";
+  }
+
+  if (ctx.method === "PATCH") {
+    const { id, status } = ctx.request.query;
+    ticketsList.changeStatus(id, status);
+    ctx.response.body = "Status changed.";
   }
 });
 
